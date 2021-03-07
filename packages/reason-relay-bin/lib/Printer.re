@@ -147,7 +147,7 @@ and printPropValue = (~propValue, ~state) => {
   let addToStr = s => str := str^ ++ s;
 
   if (propValue.nullable) {
-    addToStr("option<");
+    addToStr("null<");
   };
 
   printPropType(~propType=propValue.propType, ~state) |> addToStr;

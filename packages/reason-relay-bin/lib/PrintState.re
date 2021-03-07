@@ -344,7 +344,7 @@ let getPrintedFullState =
      });
 
   // We print a helper for extracting connection nodes whenever there's a connection present.
-  switch (config.connection) {
+  /*switch (config.connection) {
   | Some(connection) =>
     let connPath = connection.atObjectPath;
 
@@ -444,6 +444,7 @@ let getPrintedFullState =
     |> add_to_utils;
   | _ => ()
   };
+  */
 
   if (utils_content^ != "") {
     addToStr("  open Types\n");
