@@ -121,7 +121,7 @@ let rec printTypeReference = (~state: option(fullState), typeName: string) =>
     }
   | None => typeName |> Utils.isModuleName ? typeName ++ ".t" : typeName
   }
-and printPropType = (~propType, ~state: Types.fullState) =>
+and printPropType = (~propType, ~state: Types.fullState, ~operationType: Types.operationType) =>
   switch (propType) {
   | DataId => printDataIdType()
   | Scalar(scalar) => printScalar(scalar)
@@ -131,7 +131,7 @@ and printPropType = (~propType, ~state: Types.fullState) =>
     printStringLiteral(~literal, ~needsEscaping=true)
   | Object(obj) => printRecordReference(~obj, ~state)
   | TopLevelNodeField(_, obj) => printRecordReference(~obj, ~state)
-  | Array(propValue) => printArray(~propValue, ~state)
+  | Array(propValue) => printArray(~propValue, ~state, ~operationType)
   | Enum(enum) => printEnumName(enum.name)
   | Union(union) =>
     printUnionTypeDefinition(
@@ -142,15 +142,20 @@ and printPropType = (~propType, ~state: Types.fullState) =>
   | FragmentRefValue(name) => printFragmentRef(name)
   | TypeReference(name) => printTypeReference(~state=Some(state), name)
   }
-and printPropValue = (~propValue, ~state) => {
+and printPropValue = (~propValue, ~state, ~operationType) => {
   let str = ref("");
   let addToStr = s => str := str^ ++ s;
 
   if (propValue.nullable) {
-    addToStr("null<");
+    addToStr(
+      switch (operationType) {
+      | Mutation(_) => "option<";
+      | _ => "null<"
+      }
+    );
   };
 
-  printPropType(~propType=propValue.propType, ~state) |> addToStr;
+  printPropType(~propType=propValue.propType, ~state, ~operationType) |> addToStr;
 
   if (propValue.nullable) {
     addToStr(">");
@@ -235,8 +240,8 @@ and printFragmentRefs = (obj: object_) => {
 
   str^;
 }
-and printArray = (~propValue, ~state) =>
-  "array<" ++ printPropValue(~propValue, ~state) ++ ">"
+and printArray = (~propValue, ~state, ~operationType) =>
+  "array<" ++ printPropValue(~propValue, ~state, ~operationType) ++ ">"
 and printRecordReference = (~state: fullState, ~obj: object_) => {
   switch (
     state.objects |> Tablecloth.List.find(~f=o => {o.atPath == obj.atPath})
@@ -320,7 +325,7 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
   addToStr("\n");
   str^;
 }
-and printRefetchVariablesMaker = (obj: object_, ~state) => {
+and printRefetchVariablesMaker = (obj: object_, ~state, ~operationType) => {
   let str = ref("");
   let addToStr = s => str := str^ ++ s;
 
@@ -339,7 +344,7 @@ and printRefetchVariablesMaker = (obj: object_, ~state) => {
   };
 
   addToStr("type refetchVariables = ");
-  addToStr(printObject(~state, ~obj=optionalObj, ()));
+  addToStr(printObject(~state, ~operationType, ~obj=optionalObj, ()));
   addToStr("\n");
 
   addToStr(
@@ -377,7 +382,7 @@ and printRootType =
   | RefetchVariables(obj) =>
     switch (obj.values |> List.length) {
     | 0 => ""
-    | _ => printRefetchVariablesMaker(~state, obj) ++ "\n"
+    | _ => printRefetchVariablesMaker(~state, ~operationType, obj) ++ "\n"
     }
 
   | Fragment(Object(obj)) =>
@@ -534,7 +539,7 @@ let printUnionConverters = (union: union) => {
   str^;
 };
 
-let printUnionTypes = (~state, ~printName, union: union) => {
+let printUnionTypes = (~state, ~operationType, ~printName, union: union) => {
   let typeDefs = ref("");
   let addToTypeDefs = Utils.makeAddToStr(typeDefs);
 
