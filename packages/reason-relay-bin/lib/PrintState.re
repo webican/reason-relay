@@ -131,7 +131,7 @@ let getPrintedFullState =
 
   state.unions
   |> List.iter(({union, printName}: Types.unionInState) => {
-       Printer.printUnionTypes(union, ~state, ~operationType, ~printName) |> addToTypesModule
+       Printer.printUnionTypes(union, ~state, ~printName) |> addToTypesModule
      });
 
   // Split declarations so we can print object declarations first and as mutuals
