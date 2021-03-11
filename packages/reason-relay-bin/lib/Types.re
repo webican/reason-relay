@@ -40,6 +40,7 @@ and propType =
   | TopLevelNodeField(string, object_)
 and propValue = {
   comment: option(string),
+  optional: bool,
   nullable: bool,
   propType,
 }

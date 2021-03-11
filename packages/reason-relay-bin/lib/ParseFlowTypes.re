@@ -44,23 +44,27 @@ let rec mapObjProp =
   switch (prop) {
   | String(_) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Scalar(String),
     }
 
   | StringLiteral({value}) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: value |> makeStringLiteralOrString,
     }
 
   | Nullable({argument: (_, String(_))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Scalar(String),
     }
   | Nullable({argument: (_, StringLiteral({value}))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: value |> makeStringLiteralOrString,
     }
@@ -69,12 +73,14 @@ let rec mapObjProp =
   | Number(_)
   | NumberLiteral(_) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Scalar(Float),
     }
   | Nullable({argument: (_, Number(_))})
   | Nullable({argument: (_, NumberLiteral(_))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Scalar(Float),
     }
@@ -82,21 +88,25 @@ let rec mapObjProp =
   // Booleans
   | Boolean(_) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Scalar(Boolean),
     }
   | BooleanLiteral(_) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Scalar(Boolean),
     }
   | Nullable({argument: (_, Boolean(_))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Scalar(Boolean),
     }
   | Nullable({argument: (_, BooleanLiteral(_))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Scalar(Boolean),
     }
@@ -104,11 +114,13 @@ let rec mapObjProp =
   // Arrays
   | Array({argument: typ}) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Array(typ |> mapObjProp(~path, ~state, ~optional=false)),
     }
   | Nullable({argument: (_, Array({argument: typ}))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Array(typ |> mapObjProp(~path, ~state, ~optional=false)),
     }
@@ -117,7 +129,8 @@ let rec mapObjProp =
       targs: Some((_, {arguments: [typ]})),
     }) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Array(typ |> mapObjProp(~path, ~state, ~optional=false)),
     }
   | Nullable({
@@ -130,6 +143,7 @@ let rec mapObjProp =
       ),
     }) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Array(typ |> mapObjProp(~path, ~state, ~optional=false)),
     }
@@ -137,11 +151,13 @@ let rec mapObjProp =
   // Objects
   | Object({properties}) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType: Object(makeObjShape(~path, ~state, properties)),
     }
   | Nullable({argument: (_, Object({properties}))}) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType: Object(makeObjShape(~path, ~state, properties)),
     }
@@ -192,6 +208,7 @@ let rec mapObjProp =
         ],
       ) => {
         comment: None,
+        optional: optional,
         nullable: true,
         propType:
           TopLevelNodeField(
@@ -206,7 +223,8 @@ let rec mapObjProp =
         ~maybeMoreMembers,
         ~state,
         ~path,
-        ~optional=true,
+        ~optional,
+        ~nullable=true,
       )
     }
 
@@ -224,12 +242,14 @@ let rec mapObjProp =
       ~maybeMoreMembers,
       ~path,
       ~optional,
+      ~nullable=false,
     )
 
   // This handles generic type references, extracting it if it's an enum
   | Generic({id: Unqualified((_, {name: typeName}))}) => {
       comment: None,
-      nullable: optional,
+      optional: optional,
+      nullable: false,
       propType:
         switch (
           state.enums
@@ -245,6 +265,7 @@ let rec mapObjProp =
       argument: (_, Generic({id: Unqualified((_, {name: typeName}))})),
     }) => {
       comment: None,
+      optional: optional,
       nullable: true,
       propType:
         switch (
@@ -259,7 +280,12 @@ let rec mapObjProp =
     }
 
   // Handle anything we haven't matched above, including any which needs no explicit match as it's handled here
-  | _ => {comment: None, nullable: optional, propType: Scalar(Any)}
+  | _ => {
+      comment: None,
+      optional: optional,
+      nullable: false,
+      propType: Scalar(Any)
+    }
   }
 
 /**
@@ -296,7 +322,7 @@ and makeObjShape =
          )) =>
          addValue(
            Types.(
-             Prop(id, {comment: None, nullable: false, propType: DataId})
+             Prop(id, {comment: None, optional: false, nullable: false, propType: DataId})
            ),
          )
        // Map all $fragmentRefs. These are either a single type (+$fragmentRefs: SomeFragment_someType$ref), or an intersection of types (+$fragmentRefs: SomeFragment_someType$ref & SomeOtherFragment_someType$ref)
@@ -441,9 +467,10 @@ and makeUnionDefinition =
   };
 }
 and makeUnion =
-    (~firstProps, ~secondProps, ~maybeMoreMembers, ~path, ~optional, ~state) => {
+    (~firstProps, ~secondProps, ~maybeMoreMembers, ~path, ~optional, ~nullable, ~state) => {
   {
-    Types.nullable: optional,
+    Types.optional: optional,
+    Types.nullable: nullable,
     comment: None,
     propType:
       Union(

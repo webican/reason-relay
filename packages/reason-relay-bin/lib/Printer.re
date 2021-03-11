@@ -121,7 +121,7 @@ let rec printTypeReference = (~state: option(fullState), typeName: string) =>
     }
   | None => typeName |> Utils.isModuleName ? typeName ++ ".t" : typeName
   }
-and printPropType = (~propType, ~state: Types.fullState, ~isInput) =>
+and printPropType = (~propType, ~state: Types.fullState) =>
   switch (propType) {
   | DataId => printDataIdType()
   | Scalar(scalar) => printScalar(scalar)
@@ -131,7 +131,7 @@ and printPropType = (~propType, ~state: Types.fullState, ~isInput) =>
     printStringLiteral(~literal, ~needsEscaping=true)
   | Object(obj) => printRecordReference(~obj, ~state)
   | TopLevelNodeField(_, obj) => printRecordReference(~obj, ~state)
-  | Array(propValue) => printArray(~propValue, ~state, ~isInput)
+  | Array(propValue) => printArray(~propValue, ~state)
   | Enum(enum) => printEnumName(enum.name)
   | Union(union) =>
     printUnionTypeDefinition(
@@ -142,31 +142,28 @@ and printPropType = (~propType, ~state: Types.fullState, ~isInput) =>
   | FragmentRefValue(name) => printFragmentRef(name)
   | TypeReference(name) => printTypeReference(~state=Some(state), name)
   }
-and printPropValue = (~propValue, ~state, ~isInput) => {
+and printPropValue = (~propValue, ~state) => {
   let str = ref("");
   let addToStr = s => str := str^ ++ s;
 
-  /*if (propValue.nullable && isInput) {
-    addToStr("isInput")
-  }*/
-  if (propValue.nullable) {
-    addToStr(
-      switch (isInput) {
-      | true => "option<";
-      | false => "null<"
-      }
-    );
-  };
+  addToStr(
+    switch ((propValue.optional, propValue.nullable)) {
+    | (true, true) => "nullable<";
+    | (false, true) => "null<";
+    | (true, false) => "option<";
+    | (false, false) => "";
+    }
+  );
 
-  printPropType(~propType=propValue.propType, ~state, ~isInput) |> addToStr;
+  printPropType(~propType=propValue.propType, ~state) |> addToStr;
 
-  if (propValue.nullable) {
+  if (propValue.optional || propValue.nullable) {
     addToStr(">");
   };
 
   str^;
 }
-and printObject = (~obj: object_, ~state, ~isInput=false, ()) => {
+and printObject = (~obj: object_, ~state, ()) => {
   switch (obj.values |> List.length) {
   | 0 => "unit"
   | _ =>
@@ -197,7 +194,7 @@ and printObject = (~obj: object_, ~state, ~isInput=false, ()) => {
           ++ printRecordPropComment(propValue)
           ++ printRecordPropName(name)
           ++ ": "
-          ++ printPropValue(~propValue, ~state, ~isInput)
+          ++ printPropValue(~propValue, ~state)
           ++ ","
         | FragmentRef(_) => ""
         },
@@ -243,8 +240,8 @@ and printFragmentRefs = (obj: object_) => {
 
   str^;
 }
-and printArray = (~propValue, ~state, ~isInput) =>
-  "array<" ++ printPropValue(~propValue, ~state, ~isInput) ++ ">"
+and printArray = (~propValue, ~state) =>
+  "array<" ++ printPropValue(~propValue, ~state) ++ ">"
 and printRecordReference = (~state: fullState, ~obj: object_) => {
   switch (
     state.objects |> Tablecloth.List.find(~f=o => {o.atPath == obj.atPath})
@@ -275,11 +272,11 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
     |> List.iteri((index, p) => {
          addToStr(
            switch (p) {
-           | Prop(name, {nullable}) =>
+           | Prop(name, {optional}) =>
              (index > 0 ? "," : "")
              ++ "\n  ~"
              ++ printSafeName(name)
-             ++ (nullable ? "=?" : "")
+             ++ (optional ? "=?" : "")
            | FragmentRef(_) =>
              (index > 0 ? "," : "")
              ++ "\n  ~"
@@ -292,7 +289,7 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
       obj.values
       |> List.exists(
            fun
-           | Prop(_, {nullable}) => nullable
+           | Prop(_, {optional}) => optional
            | _ => false,
          );
 
@@ -304,12 +301,14 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
     |> List.iteri((index, p) => {
          addToStr(
            switch (p) {
-           | Prop(name, _) =>
+           | Prop(name, {nullable}) =>
              (index > 0 ? "," : "")
              ++ "\n  "
              ++ printSafeName(name)
              ++ ": "
+             ++ (nullable ? "Js.Nullable.fromOption(" : "")
              ++ printSafeName(name)
+             ++ (nullable ? ")" : "")
            | FragmentRef(_) =>  
              (index > 0 ? "," : "")
              ++ "\n  "
@@ -328,7 +327,7 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
   addToStr("\n");
   str^;
 }
-and printRefetchVariablesMaker = (obj: object_, ~state, ~isInput) => {
+and printRefetchVariablesMaker = (obj: object_, ~state) => {
   let str = ref("");
   let addToStr = s => str := str^ ++ s;
 
@@ -339,15 +338,15 @@ and printRefetchVariablesMaker = (obj: object_, ~state, ~isInput) => {
       obj.values
       |> List.map(value =>
            switch (value) {
-           | Prop(name, {nullable: false} as propValue) =>
-             Prop(name, {...propValue, nullable: true})
+           | Prop(name, {optional: false} as propValue) =>
+             Prop(name, {...propValue, optional: true})
            | a => a
            }
          ),
   };
 
   addToStr("type refetchVariables = ");
-  addToStr(printObject(~state, ~obj=optionalObj, ~isInput, ()));
+  addToStr(printObject(~state, ~obj=optionalObj, ()));
   addToStr("\n");
 
   addToStr(
@@ -379,13 +378,13 @@ and printRootType =
   | Variables(Object(obj)) =>
     printRecordComment(obj)
     ++ "type variables = "
-    ++ printObject(~obj, ~state, ~isInput=true, ())
+    ++ printObject(~obj, ~state, ())
     ++ "\n"
   | Variables(Union(_)) => raise(Invalid_top_level_shape)
   | RefetchVariables(obj) =>
     switch (obj.values |> List.length) {
     | 0 => ""
-    | _ => printRefetchVariablesMaker(~state, ~isInput=true, obj) ++ "\n"
+    | _ => printRefetchVariablesMaker(~state, obj) ++ "\n"
     }
 
   | Fragment(Object(obj)) =>

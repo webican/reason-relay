@@ -19,6 +19,7 @@ let transformVariables =
                    propType:
                      Array({
                        comment: None,
+                       optional: false,
                        nullable: false,
                        propType: DataId,
                      }),

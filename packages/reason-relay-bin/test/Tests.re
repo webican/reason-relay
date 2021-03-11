@@ -74,20 +74,22 @@ describe("codegen", ({test, _}) => {
             values: [
               Prop(
                 "someProp",
-                {comment: None, nullable: true, propType: DataId},
+                {comment: None, optional: true, nullable: true, propType: DataId},
               ),
               Prop(
                 "anotherProp",
-                {comment: None, nullable: false, propType: Scalar(Int)},
+                {comment: None, optional: false, nullable: false, propType: Scalar(Int)},
               ),
               Prop(
                 "aThirdProp",
                 {
                   comment: None,
+                  optional: false,
                   nullable: true,
                   propType:
                     Array({
                       comment: None,
+                      optional: false,
                       nullable: true,
                       propType: TypeReference("some_type"),
                     }),
