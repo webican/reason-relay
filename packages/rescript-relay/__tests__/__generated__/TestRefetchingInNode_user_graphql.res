@@ -7,7 +7,13 @@ module Types = {
     | #Idle
     | #Offline
     | #Online
-  ]
+    ]
+  
+  type enum_OnlineStatus_input = [
+    | #Idle
+    | #Offline
+    | #Online
+    ]
   
   type rec fragment_friendsConnection = {
     totalCount: int,
@@ -45,6 +51,8 @@ module Utils = {
   open Types
   external onlineStatus_toString:
   enum_OnlineStatus => string = "%identity"
+  external onlineStatus_input_toString:
+  enum_OnlineStatus_input => string = "%identity"
 }
 type relayOperationNode
 type operationType = RescriptRelay.fragmentNode<relayOperationNode>

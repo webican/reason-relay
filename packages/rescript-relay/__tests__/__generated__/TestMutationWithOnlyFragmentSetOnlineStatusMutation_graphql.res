@@ -7,7 +7,13 @@ module Types = {
     | #Idle
     | #Offline
     | #Online
-  ]
+    ]
+  
+  type enum_OnlineStatus_input = [
+    | #Idle
+    | #Offline
+    | #Online
+    ]
   
   type rawResponse_setOnlineStatus_user_memberOf_User = {
     firstName: string,
@@ -58,7 +64,11 @@ module Types = {
     setOnlineStatus: option<rawResponse_setOnlineStatus>,
   }
   type variables = {
-    onlineStatus: enum_OnlineStatus,
+    onlineStatus: [
+    | #Idle
+    | #Offline
+    | #Online
+    ],
   }
 }
 
@@ -162,6 +172,8 @@ module Utils = {
   open Types
   external onlineStatus_toString:
   enum_OnlineStatus => string = "%identity"
+  external onlineStatus_input_toString:
+  enum_OnlineStatus_input => string = "%identity"
   let makeVariables = (
     ~onlineStatus
   ): variables => {

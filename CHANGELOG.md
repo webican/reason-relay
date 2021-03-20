@@ -1,5 +1,14 @@
 # master
 
+# 0.17.0
+
+Small release, mainly bringing stable references to functions produced by the PPX, and a fix for enums in input positions.
+
+## Fixes & misc
+
+- Every enum now gets an exact version output of itself too, and that exact version is now wired up to be used in variables and inputs, where it doesn't make sense to use the open enum we use for responses/fragments (that is open to enforce adding a catch-all case for any enums that the server might add in the future).
+- All hooks produced by the PPX now have _stable references_ (or as stable as they can be), meaning you won't get a new function on each render for most of the callbacks and functions the PPX returns.
+
 # 0.16.0
 
 _[Here's a commit showing a project being upgraded to this version](https://github.com/zth/rescript-relay/commit/bfb904065c22bdfc1c5bd268704b8d061c7f85ec)_

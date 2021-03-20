@@ -7,7 +7,13 @@ module Types = {
     | #Idle
     | #Offline
     | #Online
-  ]
+    ]
+  
+  type enum_OnlineStatus_input = [
+    | #Idle
+    | #Offline
+    | #Online
+    ]
   
   type response = {
     fragmentRefs: RescriptRelay.fragmentRefs<[ | #TestPaginationUnion_query]>
@@ -17,7 +23,11 @@ module Types = {
     count: option<int>,
     cursor: option<string>,
     groupId: option<string>,
-    onlineStatuses: option<array<enum_OnlineStatus>>,
+    onlineStatuses: option<array<[
+    | #Idle
+    | #Offline
+    | #Online
+    ]>>,
   }
   let makeRefetchVariables = (
     ~count=?,
@@ -36,7 +46,11 @@ module Types = {
     count: option<int>,
     cursor: option<string>,
     groupId: string,
-    onlineStatuses: option<array<enum_OnlineStatus>>,
+    onlineStatuses: option<array<[
+    | #Idle
+    | #Offline
+    | #Online
+    ]>>,
   }
 }
 
@@ -91,6 +105,8 @@ module Utils = {
   open Types
   external onlineStatus_toString:
   enum_OnlineStatus => string = "%identity"
+  external onlineStatus_input_toString:
+  enum_OnlineStatus_input => string = "%identity"
   let makeVariables = (
     ~count=?,
     ~cursor=?,

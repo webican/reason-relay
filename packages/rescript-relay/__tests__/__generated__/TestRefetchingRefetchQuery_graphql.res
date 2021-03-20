@@ -7,7 +7,13 @@ module Types = {
     | #Idle
     | #Offline
     | #Online
-  ]
+    ]
+  
+  type enum_OnlineStatus_input = [
+    | #Idle
+    | #Offline
+    | #Online
+    ]
   
   type rec response_node = {
     fragmentRefs: RescriptRelay.fragmentRefs<[ | #TestRefetching_user]>
@@ -17,7 +23,11 @@ module Types = {
   }
   type rawResponse = response
   type refetchVariables = {
-    friendsOnlineStatuses: option<array<enum_OnlineStatus>>,
+    friendsOnlineStatuses: option<array<[
+    | #Idle
+    | #Offline
+    | #Online
+    ]>>,
     showOnlineStatus: option<bool>,
     id: option<string>,
   }
@@ -33,7 +43,11 @@ module Types = {
   }
   
   type variables = {
-    friendsOnlineStatuses: option<array<enum_OnlineStatus>>,
+    friendsOnlineStatuses: option<array<[
+    | #Idle
+    | #Offline
+    | #Online
+    ]>>,
     showOnlineStatus: bool,
     id: string,
   }
@@ -90,6 +104,8 @@ module Utils = {
   open Types
   external onlineStatus_toString:
   enum_OnlineStatus => string = "%identity"
+  external onlineStatus_input_toString:
+  enum_OnlineStatus_input => string = "%identity"
   let makeVariables = (
     ~friendsOnlineStatuses=?,
     ~showOnlineStatus,
