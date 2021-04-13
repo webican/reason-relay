@@ -58,7 +58,9 @@ type relayOperationNode
 type operationType = RescriptRelay.fragmentNode<relayOperationNode>
 
 
-let node: operationType = %raw(json` {
+%%private(let makeNode = (node_TestRefetchingRefetchQuery): operationType => {
+  ignore(node_TestRefetchingRefetchQuery)
+  %raw(json` {
   "argumentDefinitions": [
     {
       "defaultValue": null,
@@ -78,7 +80,7 @@ let node: operationType = %raw(json` {
       "fragmentPathInResult": [
         "node"
       ],
-      "operation": require('./TestRefetchingRefetchQuery_graphql.bs.js').node,
+      "operation": node_TestRefetchingRefetchQuery,
       "identifierField": "id"
     }
   },
@@ -140,5 +142,7 @@ let node: operationType = %raw(json` {
   "type": "User",
   "abstractKey": null
 } `)
+})
+let node: operationType = makeNode(TestRefetchingRefetchQuery_graphql.node)
 
 

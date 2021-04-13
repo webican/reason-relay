@@ -1,5 +1,26 @@
 # master
 
+# 0.18.1
+
+Minor patch release, removing an inline `require` to further enhance ES modules compability.
+
+# 0.18.0
+
+_[Here's a commit showing a project being upgraded to this version](https://github.com/zth/rescript-relay/commit/49bf382d80c71207a11fe9aa1271a7cf06a98817)_
+
+## Fixes & misc
+
+- Support ES6 imports for `@refetchable` queries. This for example allows the use of Vite and similar bundlers.
+
+# 0.17.1
+
+Small patch release, mainly fixing the broken `getConnectionID` binding.
+
+## Fixes & misc
+
+- Fix broken `getConnectionID` binding. It's now _properly_ exposed on `ConnectionHandler.getConnectionID`, so use that instead.
+- Remove `getConnectionID` generation from PPX. Prefer `ConnectionHandler.getConnectionID`. Even though it's slightly more cumbersome, it's guaranteed to not give you dependency cycles.
+
 # 0.17.0
 
 Small release, mainly bringing stable references to functions produced by the PPX, and a fix for enums in input positions.
