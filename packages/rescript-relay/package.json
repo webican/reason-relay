@@ -1,6 +1,6 @@
 {
   "name": "rescript-relay",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "main": "src/RescriptRelay.re",
   "license": "MIT",
   "author": "Gabriel Nordeborn",
@@ -16,7 +16,8 @@
     "relaymodern",
     "react",
     "reason",
-    "reasonml"
+    "reasonml",
+    "rescript"
   ],
   "bin": {
     "rescript-relay-compiler": "compiler/compiler-cli.js"
