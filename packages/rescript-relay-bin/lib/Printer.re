@@ -308,17 +308,21 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
   addToStr("let " ++ name ++ " = (");
 
   if (hasContents) {
+    let hasPrintedFragmentRefs = ref(false);
+
     obj.values
     |> List.iteri((index, p) => {
          addToStr(
-           switch (p) {
-           | Prop(name, {optional}) =>
+           switch (hasPrintedFragmentRefs^, p) {
+           | (_, Prop(name, {optional})) =>
              (index > 0 ? "," : "")
              ++ "\n  ~"
              ++ printSafeName(name)
              ++ (optional ? "=?" : "")
-           | FragmentRef(_) =>
-             (index > 0 ? "," : "") ++ "\n  ~" ++ "fragmentRefs"
+           | (false, FragmentRef(_)) =>
+             hasPrintedFragmentRefs := true;
+             (index > 0 ? "," : "") ++ "\n  ~" ++ "fragmentRefs";
+           | (true, FragmentRef(_)) => ""
            },
          )
        });
@@ -335,31 +339,34 @@ and printObjectMaker = (obj: object_, ~targetType, ~name) => {
       (shouldAddUnit ? ",\n  ()" : "") ++ "\n): " ++ targetType ++ " => {",
     );
 
+    let hasPrintedFragmentRefs = ref(false);
+
     obj.values
     |> List.iteri((index, p) => {
          addToStr(
-           switch (p) {
-           | Prop(name, {nullable}) =>
+           switch (hasPrintedFragmentRefs^, p) {
+           | (_, Prop(name, _)) =>
              (index > 0 ? "," : "")
              ++ "\n  "
              ++ printSafeName(name)
              ++ ": "
              ++ (nullable ? "Js.Nullable.fromOption(" : "")
              ++ printSafeName(name)
-             ++ (nullable ? ")" : "")
-           | FragmentRef(_) =>  
+           | (false, FragmentRef(_)) =>
+             hasPrintedFragmentRefs := true;
              (index > 0 ? "," : "")
              ++ "\n  "
              ++ "fragmentRefs"
              ++ ": "
-             ++ "fragmentRefs"
+             ++ "fragmentRefs";
+           | (true, FragmentRef(_)) => ""
            },
          )
        });
 
     addToStr("\n}");
   } else {
-    addToStr("\n) => Js.Obj.empty()");
+    addToStr("\n) => ()");
   };
 
   addToStr("\n");
@@ -420,12 +427,7 @@ and printRootType = (~recursiveMode=None, ~state: fullState, rootType) => {
     ++ printObject(~printingContext=Variables, ~obj, ~state, ())
     ++ "\n"
   | Variables(Union(_)) => raise(Invalid_top_level_shape)
-  | RefetchVariables(obj) =>
-    switch (obj.values |> List.length) {
-    | 0 => ""
-    | _ => printRefetchVariablesMaker(~state, obj) ++ "\n"
-    }
-
+  | RefetchVariables(obj) => printRefetchVariablesMaker(~state, obj) ++ "\n"
   | Fragment(Object(obj)) =>
     printRecordComment(obj)
     ++ "type fragment = "
